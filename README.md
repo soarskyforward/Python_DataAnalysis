@@ -33,6 +33,7 @@
  ## python语法基础
 
  >从事数据分析和科学计算的人却会使用IPython，一个强化的Python解释器，或Jupyter notebooks，一个网页代码笔记本
+
  ```
  #运行ipython
  ipython
@@ -52,6 +53,7 @@
 
  #### Python概念和语言机制
  >万物皆对象,Python语言的一个重要特性就是它的对象模型的一致性。每个数字、字符串、数据结构、函数、类、模块等等，都是在Python解释器的自有“盒子”内，它被认为是Python对象。
+
  ```
  #动态引用，强类型
  a = 5
@@ -71,16 +73,17 @@
  ```
  def isiterable(obj):
      try:
- 	iter(obj)
- 	return True
+ 	   iter(obj)
+ 	   return True
      except TypeError:
- 	return False
+ 	   return False
 
  isiterable('a string')
  ```
 
  可变与不可变对象
  >Python中的大多数对象，比如列表、字典、NumPy数组，和用户定义的类型（类），都是可变的。意味着这些对象或包含的值可以被修改：
+
  ```
  a_list = ['foo', 1, 2]
  a_list[2] = (3, 4)
@@ -124,7 +127,6 @@
  #python中的布尔值有两个
  True and True
  False or True
-
  ```
 
  类型转换
@@ -177,10 +179,10 @@
  #用continue使for循环提前，跳过剩下的部分
  sequence = [1, 2, None, 4, None, 5]
  total = 0
- for value in sequence:
-     if value is None:
- 	continue
-     total += value
+for value in sequence:
+  if value is None:
+    continue
+  total += value
 
 
  #用break跳出for循环
@@ -233,6 +235,7 @@
 
  元祖
  >元组是一个固定长度，不可改变的Python序列对象。创建元组的最简单方式，是用逗号分隔一列值
+
  ```
  tup = 2, 3, 4
  #tuple可以将任意序列或迭代器转换成元组
@@ -244,14 +247,15 @@
      print('a = {0}, b = {1}, c = {2}'.format(a,b,c))
  ```
  >Python最近新增了更多高级的元组拆分功能，允许从元组的开头“摘取”几个元素。它使用了特殊的语法*rest
- ```
- values = 1, 2, 3, 4, 5
 
- a, b ,rest* =  values
+ ```
+values = 1, 2, 3, 4, 5
+a, b ,rest* =  values
  ```
  列表
 
  >与元组对比，列表的长度可变、内容可以被修改。你可以用方括号定义，或用list函数
+
  ```
  a_list = [1,2,3,None]
  tup = ('foo', 'bar')
@@ -330,7 +334,7 @@
  first_names, last_names = zip(*pitchers)
 
  #reversed函数
- list(reversed(range(10))
+ list(reversed(range(10)))
  ```
 
  字典
@@ -390,7 +394,7 @@
  ```
 
  列表、集合和字典推导式
- >形式如[expr for val in collection if condition]
+ >[expr for val in collection if condition]
  dict_comp = {key-expr : value-expr for value in collection if condition}
  set_comp = {expr for value in collection if condition}
 
