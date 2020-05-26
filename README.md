@@ -631,7 +631,7 @@ f = open(path)
  obj2 = pd.Series([4, 7, -5, 3], index=['d', 'b', 'a', 'c'])
  obj2['a']
  obj2['d'] = 6
- 
+
  'b' in obj2
  'e' in obj2
 
@@ -640,4 +640,157 @@ f = open(path)
 
  states = ['California', 'Ohio', 'Oregon', 'Texas']
  obj4 = pd.Series(sdata, index=states)
+
+ #pandas的isnull和notnull函数可用于检测缺失数据：
+ pd.isnull(obj4)
+ pd.notnull(obj4)
+ obj4.isnull()
+
+ #Series对象本身及其索引都有一个name属性，该属性跟pandas其他的关键功能关系非常密切
+ obj4.name = 'population'
+ obj4.index.name = 'state'
  ```
+
+ DataFrame
+ >DataFrame是一个表格型的数据结构，它含有一组有序的列，每列可以是不同的值类型（数值、字符串、布尔值等）。DataFrame既有行索引也有列索引，它可以被看做由Series组成的字典（共用同一个索引）。DataFrame中的数据是以一个或多个二维块存放的（而不是列表、字典或别的一维数据结构）。
+
+```
+data = {'state': ['Ohio', 'Ohio', 'Ohio', 'Nevada', 'Nevada', 'Nevada'],
+        'year': [2000, 2001, 2002, 2001, 2002, 2003],
+        'pop': [1.5, 1.7, 3.6, 2.4, 2.9, 3.2]}
+frame = pd.DateFrame(data)
+
+#对于特别大的DataFrame，head方法会选取前五行
+frame.head()
+
+#如果指定了列序列，则DataFrame的列就会按照指定顺序进行排列
+pd.DataFrame(data, columns=['year', 'state', 'pop'])
+
+#通过类似字典标记的方式或属性的方式，可以将DataFrame的列获取为一个Series
+frame2 = pd.DataFrame(data, columns = ['year', 'state', 'pop', 'debt'],
+                      index = ['one', 'two', 'three', 'four','five','six'])
+frame2.columns
+frame2['state']
+frame2.year
+```
+>frame2[column]适用于任何列的名，但是frame2.column只有在列名是一个合理的Python变量名时才适用。
+
+```
+#行也可以通过位置或名称的方式进行获取，比如用loc属性
+frame2.loc['three']
+
+frame2['debt'] = 16.5
+frame2['debt'] = np.arange(6.)
+
+#关键字del用于删除列
+frame2['eastern'] = frame2.state == 'Ohio'
+del frame2['eastern']
+frame2.columns
+```
+
+>通过索引方式返回的列只是相应数据的视图而已，并不是副本。因此，对返回的Series所做的任何就地修改全都会反映到源DataFrame上。通过Series的copy方法即可指定复制列。
+
+```
+#如果嵌套字典传给DataFrame，pandas就会被解释为：外层字典的键作为列，内层键则作为行索引
+pop = {'Nevada': {2001: 2.4, 2002: 2.9},'Ohio': {2000: 1.5, 2001: 1.7, 2002: 3.6}}
+frame3 = pd.DateFrame(pop)
+
+#使用类似NumPy数组的方法，对DataFrame进行转置
+frame3.T
+
+#如果设置了DataFrame的index和columns的name属性，则这些信息也会被显示出来
+frame3.index.name = 'year'
+frame3.columns.name = 'state'
+```
+
+pandas索引对象
+>pandas的索引对象负责管理轴标签和其他元数据（比如轴名称等）。构建Series或DataFrame时，所用到的任何数组或其他序列的标签都会被转换成一个Index
+
+```
+obj = pd.Series(range(3), index = ['a', 'b', 'c'])
+index = obj.index
+
+#index对象不可变
+index[1] = 'd' #TypeError
+
+#不可变可以使Index对象在多个数据结构之间安全共享
+labels = pd.Index(np.arange(3))
+obj2 = pd.Series([1.5, -2.5, 0], index=labels)
+```
+
+#### 基本功能
+重新索引
+```
+obj = pd.Series([4.5, 7.2, -5.3, 3.6], index=['d', 'b', 'a', 'c'])
+obj2 = obj.reindex(['a', 'b', 'c', 'd', 'e'])
+```
+>对于时间序列这样的有序数据，重新索引时可能需要做一些插值处理。method选项即可达到此目的，例如，使用ffill可以实现前向值填充
+```
+obj3 = pd.Series(['blue', 'purple', 'yellow'], index=[0, 2, 4])
+obj3.reindex(range(6), method = 'ffill')
+```
+
+丢弃指定轴上的项
+```
+obj = pd.Series(np.arange(5.), index=['a', 'b', 'c', 'd', 'e'])
+new_obj = obj.drop('c')
+obj.drop(['d', 'c'])
+
+#通过传递axis=1或axis='columns'可以删除列的值
+data.drop('two', axis = 1)
+data.drop('two', axis = 'columns')
+```
+
+索引、选取和过滤
+```
+obj = pd.Series(np.arange(4.), index=['a', 'b', 'c', 'd'])
+obj[['b', 'a', 'd']]
+obj[2:4]
+obj[obj < 2]
+
+#利用标签的切片运算与普通的Python切片运算不同，其末端是包含的：
+obj['b':'c']
+```
+
+用loc和iloc进行选取
+```
+data.loc['Colorado', ['two', 'three']]
+data.iloc[2, [3, 0, 1]]
+data.loc[:'Utah', 'two']
+data.iloc[:, :3][data.three > 5]
+```
+
+算术运算和数据对齐
+>pandas最重要的一个功能是，它可以对不同索引的对象进行算术运算。在将对象相加时，如果存在不同的索引对，则结果的索引就是该索引对的并集。对于有数据库经验的用户，这就像在索引标签上进行自动外连接。
+
+```
+s1 = pd.Series([7.3, -2.5, 3.4, 1.5], index=['a', 'c', 'd', 'e'])
+s2 = pd.Series([-2.1, 3.6, -1.5, 4, 3.1], index=['a', 'c', 'e', 'f', 'g'])
+s1 + s2
+```
+在算术方法中填充值
+```
+df1.add(df2, fill_value=0)
+```
+
+
+#### DataFrame和Series之间的运算
+
+```
+arr = np.arange(12.).reshape((3,4))
+arr - arr[0]
+```
+
+>当我们从arr减去arr[0]，每一行都会执行这个操作。这就叫做广播（broadcasting）
+
+
+```
+series2 = pd.Series(range(3), index=['b', 'e', 'f'])
+frame = pd.DataFrame(np.arange(12.).reshape((4, 3)),
+                 columns=list('bde'),
+                 index=['Utah', 'Ohio', 'Texas', 'Oregon'])
+series3 = frame['d']
+frame.sub(series3, axis='index')
+```
+
+>传入的轴号就是希望匹配的轴。在本例中，我们的目的是匹配DataFrame的行索引（axis='index' or axis=0）并进行广播。
