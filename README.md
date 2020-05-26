@@ -425,3 +425,219 @@ a, b ,rest* =  values
 
  equiv_anon = lambda x: x * 2
  ```
+
+ #### 生成器
+ >能以一种一致的方式对序列进行迭代（比如列表中的对象或文件中的行）是Python的一个重要特点。这是通过一种叫做迭代器协议（iterator protocol，它是一种使对象可迭代的通用方式）的方式实现的，一个原生的使对象可迭代的方法。
+
+ ```
+ some_dict = {'a': 1, 'b': 2, 'c': 3}
+ for key in some_dict:
+     print(key)
+
+ dict_itered = iter(some_dict)
+ list(dict_itered)
+ ```
+ >生成器（generator）是构造新的可迭代对象的一种简单方式。一般的函数执行之后只会返回单个值，而生成器则是以延迟的方式返回一个值序列，即每返回一个值之后暂停，直到下一个值被请求时再继续。要创建一个生成器，只需将函数中的return替换为yeild即可
+
+ ```
+ def squares(n = 10):
+     print('Generating squares from 1 to{0}'.formar(n ** 2))
+     for i in range(1,n+1):
+ 	yield i ** 2
+
+ #生成器表达式
+ gen = (x ** 2 for x in range(100))
+
+ ```
+ #### 文件与操作系统
+ ```
+path = 'examples/segismundo.txt'
+f = open(path)
+ ```
+ >默认情况下，文件是以只读模式（'r'）打开的。然后，我们就可以像处理列表那样来处理这个文件句柄f了，比如对行进行迭代
+ ```
+ for line in f:
+ 	pass
+ ```
+
+ ```
+ #使用open创建文件对象，一定要用close关闭它。关闭文件可以返回操作系统资源
+ f.close()
+
+ with open(path) as f:
+ 	lines = [x.rstrip() for x in f]
+ ```
+ ```
+ #向文件写入，可以使用文件的write或writelines方法
+ with open('tmp.txt', 'w') as handle:
+     handle.writelines(x for x in open(path) if len(x) > 1)
+
+ with open('tmp.txt') as f:
+     lines = f.readlines()
+ ```
+
+ ## 第4章 NumPy基础：数组和矢量计算
+
+ >NumPy是在一个连续的内存块中存储数据，独立于其他Python内置对象。NumPy的C语言编写的算法库可以操作内存，而不必进行类型检查或其它前期工作。比起Python的内置序列，NumPy数组使用的内存更少。
+ NumPy可以在整个数组上执行复杂的计算，而不需要Python的for循环。
+
+ #### NumPy的ndarray：一种多维数组对象
+ ```
+ import numpy as np
+
+ data = np.random.randn(2,3)
+ data + data
+ data * 10
+
+ data.shape
+ data.dtype
+
+ #创建ndarray
+ data1 = [6, 7.5, 8, 0, 1]
+ arr1 = np.array(data1)
+ data2 = [[1, 2, 3, 4], [5, 6, 7, 8]]
+ arr2 = np.array(data2)
+ arr2.ndim
+ ```
+ >zeros和ones分别可以创建指定长度或形状的全0或全1数组。empty可以创建一个没有任何具体值的数组
+
+ ```
+ np.zeros(10)
+ np.zeros((2,4))
+ np.empty((2,2,3))
+ ```
+ ```
+ #arange是Python内置函数range的数组版
+ np.arange(10)
+ ```
+ ndarray的数据类型
+
+ ```
+ arr1 = np.array([1, 2, 3], dtype=np.float64)
+ arr2 = np.array([1, 2, 3], dtype=np.int32)
+
+ #通过ndarray的astype方法明确地将一个数组从一个dtype转换成另一个dtype
+ float_arr = arr2.astype(np.float64)
+ ```
+
+ #### NumPy数组的运算
+ ```
+ arr = np.array([[1., 2., 3.], [4., 5., 6.]])
+ arr * arr
+ arr - arr
+ 1 / arr
+
+ #基本的索引和切片
+ arr = np.arange(10)
+ arr[2]
+ arr[2:5]
+ ```
+ >跟列表最重要的区别在于，数组切片是原始数组的视图。这意味着数据不会被复制，视图上的任何修改都会直接反映到源数组上。
+ >如果你想要得到的是ndarray切片的一份副本而非视图，就需要明确地进行复制操作，例如arr[5:8].copy()。
+
+
+ #### 布尔型索引
+ ```
+ names = np.array(['Bob', 'Joe', 'Will', 'Bob', 'Will', 'Joe', 'Joe'])
+ data = np.random.randn(7,4)
+
+ names == 'Bob'
+ data[names == 'Bob']
+
+ #要选择除"Bob"以外的其他值，既可以使用不等于符号（!=），也可以通过~对条件进行否定
+ names != 'Bob'
+ data[~(name == 'Bob')]
+
+ #通过布尔型数组设置值是一种经常用到的手段
+ data[data < 0] = 0
+ ```
+ 数组转置和轴对换
+ ```
+ arr = np.arange(15).reshape((3,5))
+ arr.T
+
+ #在进行矩阵计算时，经常需要用到该操作，比如利用np.dot计算矩阵内积
+  np.dot(arr.T, arr)
+ ```
+ 通用函数：快速的元素级数组函数
+ >通用函数（即ufunc）是一种对ndarray中的数据执行元素级运算的函数。你可以将其看做简单函数（接受一个或多个标量值，并产生一个或多个标量值）的矢量化包装器。
+
+ ```
+ arr = np.arange(10)
+ np.sqrt(arr)
+ np.exp(arr)
+
+ #这些都是一元（unary）ufunc。另外一些（如add或maximum）接受2个数组（因此也叫二元（binary）ufunc），并返回一个结果数组
+ x = np.random.randn(8)
+ y = np.random.randn(8)
+ np.maximum(x,y)
+ ```
+ #### 利用数组进行数据处理
+
+ ```
+  xarr = np.array([1.1, 1.2, 1.3, 1.4, 1.5])
+ yarr = np.array([2.1, 2.2, 2.3, 2.4, 2.5])
+ cond = np.array([True, False, True, True, False])
+ result = [(x if c else y) for x , y , c in zip(xarr, yarr ,cond)]
+
+ #使用np.where，则可以将该功能写得非常简洁
+ result = np.where(cond, xarr, yarr)
+ np.where(arr > 0, 2, -2)
+ ```
+
+ 数学和统计方法
+ ```
+ arr = np.random.randn(5, 4)
+ #arr.mean(1)是“计算行的平均值”，arr.sum(0)是“计算每列的和”
+ arr.mean(axis=1)
+ arr.sum(axis=0)
+ ```
+ 唯一化以及其它的集合逻辑
+ ```
+ names = np.array(['Bob', 'Joe', 'Will', 'Bob', 'Will', 'Joe', 'Joe'])
+ np.unique(names)
+ ```
+ #### 用于数组的文件输入输出
+ ```
+ arr = np.arange(10)
+ np.save('some_array.npy', arr)
+ np.load('some_array.npy')
+ ```
+ #### 线性代数
+
+ ```
+ #x.dot(y)等价于np.dot(x, y)
+ x = np.array([[1., 2., 3.], [4., 5., 6.]])
+ y = np.array([[6., 23.], [-1, 7], [8, 9]])
+
+ x.dot(y)
+ np.dot(x,y)
+ ```
+
+
+ ## pandas入门
+ >虽然pandas采用了大量的NumPy编码风格，但二者最大的不同是pandas是专门为处理表格和混杂数据设计的。而NumPy更适合处理统一的数值数组数据。
+ ```
+ import pandas as pd
+ from pandas import Series, DataFrame
+ ```
+ #### pandas的数据结构
+ Series
+ ```
+ obj = pd.Series([4,7,-5,3])
+ obj.index
+ obj.values
+
+ obj2 = pd.Series([4, 7, -5, 3], index=['d', 'b', 'a', 'c'])
+ obj2['a']
+ obj2['d'] = 6
+ 
+ 'b' in obj2
+ 'e' in obj2
+
+ sdata = {'Ohio': 35000, 'Texas': 71000, 'Oregon': 16000, 'Utah': 5000}
+ obj3 = pd.Series(sdata)
+
+ states = ['California', 'Ohio', 'Oregon', 'Texas']
+ obj4 = pd.Series(sdata, index=states)
+ ```
