@@ -794,3 +794,112 @@ frame.sub(series3, axis='index')
 ```
 
 >传入的轴号就是希望匹配的轴。在本例中，我们的目的是匹配DataFrame的行索引（axis='index' or axis=0）并进行广播。
+
+函数应用和映射
+```
+frame = pd.DataFrame(np.random.randn(4,3), columns = list('abc'),
+                      index = ['Utah', 'Ohio', 'Texas', 'Oregon'])
+np.abs(frame)
+
+f = lambda x: x.max() - x.min()
+frame.apply(f)
+frame.apply(f, axis = 'columns')
+```
+
+#### 排序和排名
+```
+obj = pd.Series(range(4), index = ['d', 'a', 'b','c'])
+obj.sort_index()
+
+frame = pd.DataFrame(np.arange(8).reshape((2,4)),index=['three', 'one'],
+                      columns=['d', 'a', 'b', 'c'])
+frame.sort_index(axis = 1,ascending=False)
+
+obj = pd.Series([4, 7, -3, 2])
+obj.sort_values()
+
+obj = pd.Series([7, -5, 7, 4, 2, 0, 4])
+obj.rank()
+obj.rank(method = 'first')
+```
+
+#### 汇总和计算描述统计
+>NA值会自动被排除，除非整个切片（这里指的是行或列）都是NA。通过skipna选项可以禁用该功能
+
+```
+df = pd.DataFrame([[1.4, np.nan], [7.1, -4.5],
+                    [np.nan, np.nan], [0.75, -1.3]],
+                   index=['a', 'b', 'c', 'd'],
+                   columns=['one', 'two'])
+df.sum()
+df.mean(axis = 'columns', skipna = False)
+
+df.cumsum() #累加
+df.cumprod()  #累乘
+
+df.describe()
+```
+>Series的corr方法用于计算两个Series中重叠的、非NA的、按索引对齐的值的相关系数。与此类似，cov用于计算协方差
+
+```
+import pandas_datareader.data as web
+all_data = {ticker: web.get_data_yahoo(ticker)
+            for ticker in ['AAPL', 'IBM', 'MSFT', 'GOOG']}
+
+price = pd.DataFrame({ticker: data['Adj Close']
+                     for ticker, data in all_data.items()})
+volume = pd.DataFrame({ticker: data['Volume']
+                      for ticker, data in all_data.items()})
+returns = price.pct_change()
+
+ returns['MSFT'].corr(returns['IBM'])
+ returns['MSFT'].cov(returns['IBM'])
+```
+
+
+## 第6章 数据加载、存储与文件格式
+
+#### 读写文本格式的数据
+```
+df = pd.read_csv('examples/ex1.csv')
+df = pd.read_table('examples/ex1.csv', sep = ',')
+
+#并不是所有文件都有标题行,如下例
+#你可以让pandas为其分配默认的列名，也可以自己定义列名
+pd.read_csv('examples/ex2.csv', header=None)
+names = ['a', 'b', 'c', 'd', 'message']
+pd.read_csv('examples/ex2.csv', names = names)
+
+#假设你希望将message列做成DataFrame的索引。你可以明确表示要将该列放到索引4的位置上，
+也可以通过index_col参数指定"message"
+pd.read_csv('examples/ex2.csv', names = names, index_col = 'message')
+```
+>有些情况下，有些表格可能不是用固定的分隔符去分隔字段的（比如空白符或其它模式）,
+虽然可以手动对数据进行规整，这里的字段是被数量不同的空白字符间隔开的。这种情况下，
+你可以传递一个正则表达式作为read_table的分隔符。可以用正则表达式表达为\s+
+```
+result = pd.read_table('examples\ex3.txt', seq = '\s+')
+```
+
+>这些解析器函数还有许多参数可以帮助你处理各种各样的异形文件格式。比如说，
+可以用skiprows跳过文件的第一行、第三行和第四行
+```
+pd.read_csv('examples/ex4.csv', skiprows = [0,2,3])
+```
+
+>缺失值处理是文件解析任务中的一个重要组成部分。缺失数据经常是要么没有（空字符串），
+要么用某个标记值表示。默认情况下，pandas会用一组经常出现的标记值进行识别，比如NA及NULL
+```
+result = pd.read_csv('examples/ex5.csv', na_values=['NULL'])
+sentinels = {'message': ['foo', 'NA'], 'something': ['two']}
+pd.read_csv('examples/ex5.csv', na_values=sentinels)
+```
+
+逐块读取文本文件
+```
+pd.options.display.max_rows = 10
+
+result = pd.read_csv('examples/ex6.csv')
+#如果只想读取几行（避免读取整个文件），通过nrows进行指定即可
+result = pd.read_csv('examples/ex6.csv', nrows = 5)
+```
