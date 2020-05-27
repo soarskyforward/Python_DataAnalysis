@@ -394,7 +394,7 @@ a, b ,rest* =  values
  ```
 
  列表、集合和字典推导式
- >[expr for val in collection if condition]
+ >list_comp = [expr for val in collection if condition]
  dict_comp = {key-expr : value-expr for value in collection if condition}
  set_comp = {expr for value in collection if condition}
 
@@ -914,5 +914,179 @@ pd.read_excel(xlsx, 'Sheet1')
 data = pd.read_csv('examples/ex5.csv')
 data.to_csv('examples/out.csv',index=False, header=False)
 data.to_csv(sys.stdout, index=False, columns=['a', 'b', 'c'])
+```
 
+## 第7章 数据清洗和准备
+
+#### 处理缺失数据
+>在pandas中，我们采用了R语言中的惯用法，即将缺失值表示为NA，它表示不可用not available。
+
+```
+string_data = pd.Series(['aardvark', 'artichoke', np.nan, 'avocado'])
+string_data.isnull()
+```
+滤除缺失数据
+```
+from numpy import nan as NA
+
+data = pd.Series([1, NA, 3.5, NA, 7])
+data.dropna()
+#等价于
+data[data.notnull()]
+
+data = pd.DataFrame([[1., 6.5, 3.], [1., NA, NA],
+                      [NA, NA, NA], [NA, 6.5, 3.]])
+#dropna默认丢弃任何含有缺失值的行
+cleaned = data.dropna()
+data.dropna(how = 'all')
+data.dropna(axis=1, how='all')                  
+```
+填充缺失数据
+```
+df = pd.DateFrame(np.random.randn(7,3))
+df.fillna(0)
+#通过一个字典调用fillna，就可以实现对不同的列填充不同的值
+df.fillna({1: 0.5, 2: 0})
+```
+
+#### 数据转换
+移除重复数据
+```
+data = pd.DataFrame({'k1': ['one', 'two'] * 3 + ['two'],
+                      'k2': [1, 1, 2, 3, 3, 4, 4]})
+#duplicated函数返回一个布尔型Series，表示各行是否是重复行（前面出现过的行）
+data.duplicated()
+data.drop_duplicates()
+#也可以指定部分列进行重复项判断
+data.drop_duplicates(['k1'])
+```
+利用函数或映射进行数据转换
+```
+data = pd.DataFrame({'food': ['bacon', 'pulled pork', 'bacon',
+                            'Pastrami', 'corned beef', 'Bacon',
+                            'pastrami', 'honey ham', 'nova lox'],
+                      'ounces': [4, 3, 12, 6, 7.5, 8, 3, 5, 6]})
+meat_to_animal = {'bacon': 'pig','pulled pork': 'pig','pastrami': 'cow','corned beef': 'cow','honey ham': 'pig','nova lox': 'salmon'}
+
+lowercased = data['food'].str.lower()
+data['animal'] = lowercased.map(meat_to_animal)
+```
+替换值
+```
+#-999这个值可能是一个表示缺失数据的标记值。要将其替换为pandas能够理解的NA值，我们可以利用replace来产生一个新的Series（除非传入inplace=True）
+data = pd.Series([1., -999., 2., -999., -1000., 3.])
+data.replace(-999, np.nan)
+data.replace([-999, -1000], [np.nan, 0])
+```
+重命名轴索引
+```
+data = pd.DataFrame(np.arange(12).reshape((3, 4)),
+                     index=['Ohio', 'Colorado', 'New York'],
+                     columns=['one', 'two', 'three', 'four'])
+transform = lambda x: x[:4].upper()
+data.index.map(transfrom)
+
+data.rename(index = str.title, columns = str.upper)
+```
+
+离散化和面元划分
+>为了便于分析，连续数据常常被离散化或拆分为“面元”（bin）。
+
+```
+ages = [20, 22, 25, 27, 21, 23, 37, 31, 61, 45, 41, 32]
+bins = [18, 25, 35, 60, 100]
+cats = pd.cut(ages, bins)
+
+cats.codes
+cats.categories
+pd.value_counts(cats)
+
+#通过传递一个列表或数组到labels，设置自己的面元名称
+group_names = ['Youth', 'YoungAdult', 'MiddleAged', 'Senior']
+pd.cut(ages, bins, labels = group_names)
+```
+>qcut是一个非常类似于cut的函数，它可以根据样本分位数对数据进行面元划分。根据数据的分布情况，cut可能无法使各个面元中含有相同数量的数据点。而qcut由于使用的是样本分位数，因此可以得到大小基本相等的面元
+```
+data = np.random.randn(1000)
+cats = pd.qcut(data, 4)
+pd.value_counts(cats)
+#与cut类似，你也可以传递自定义的分位数
+ pd.qcut(data, [0, 0.1, 0.5, 0.9, 1.])
+```
+
+检测和过滤异常值
+```
+data = pd.DateFrame(np.random.randn(1000,4))
+data.describe()
+col = data[2]
+col[np.abs(col) > 3]
+#np.sign(data)可以生成1和-1
+data[np.abs(data) > 3] = np.sign(data) * 3
+```
+#### 字符串操作
+```
+val = 'a,b,  guido'
+val.split(',')
+pieces = [x.strip() for x in val.split(',')]
+first, second, third = pieces
+':'.join(pieces)
+val.replace(',', '::')
+```
+
+## 第8章 数据规整：聚合、合并和重塑
+#### 层次化索引
+>层次化索引（hierarchical indexing）是pandas的一项重要功能，它使你能在一个轴上拥有多个（两个以上）索引级别。抽象点说，它使你能以低维度形式处理高维度数据。
+
+```
+data = pd.Series(np.random.randn(9),
+                  index=[['a', 'a', 'a', 'b', 'b', 'c', 'c', 'd', 'd'],
+                        [1, 2, 3, 1, 3, 1, 2, 2, 3]])
+
+data.index
+data['b']
+data['b':'c']
+data.loc[['b','d']]
+
+#还可以在“内层”中进行选取
+data.loc[:, 2]
+```
+>层次化索引在数据重塑和基于分组的操作（如透视表生成）中扮演着重要的角色。例如，可以通过unstack方法将这段数据重新安排到一个DataFrame中
+```
+data.unstack()
+#unstack的逆运算是stack
+data.instack().stack()
+```
+
+重拍与分级排序
+>有时，你需要重新调整某条轴上各级别的顺序，或根据指定级别上的值对数据进行排序。swaplevel接受两个级别编号或名称，并返回一个互换了级别的新对象（但数据不会发生变化）
+```
+frame = pd.DataFrame(np.arange(12).reshape((4, 3)),
+                    index=[['a', 'a', 'b', 'b'], [1, 2, 1, 2]],
+                     columns=[['Ohio', 'Ohio', 'Colorado'],
+                               ['Green', 'Red', 'Green']])
+frame.index.names = ['key1', 'key2']
+frame.columns.names = ['state', 'color']
+
+frame.swaplevel('key1','key2')
+frame.sort_index(level=1)
+frame.swaplevel(0, 1).sort_index(level=0)
+
+#根据级别汇总统计
+frame.sum(level = 'key2')
+frame.sum(level = 'color', axis = 1)
+```
+
+使用DataFrame的列进行索引
+```
+frame = pd.DataFrame({'a': range(7), 'b': range(7, 0, -1),
+                       'c': ['one', 'one', 'one', 'two', 'two',
+                             'two', 'two'],
+                       'd': [0, 1, 2, 0, 1, 2, 3]})
+#DataFrame的set_index函数会将其一个或多个列转换为行索引
+frame2 = frame.set_index(['c', 'd'])
+#默认情况下，那些列会从DataFrame中移除，但也可以将其保留下来
+frame.set_index(['c', 'd'], drop = False)
+
+#reset_index的功能跟set_index刚好相反，层次化索引的级别会被转移到列里面
+frame2.reset_index()
 ```
