@@ -903,3 +903,16 @@ result = pd.read_csv('examples/ex6.csv')
 #如果只想读取几行（避免读取整个文件），通过nrows进行指定即可
 result = pd.read_csv('examples/ex6.csv', nrows = 5)
 ```
+读取Microsoft Excel文件
+```
+xlsx = pd.ExcelFile('examples/ex1.xlsx')
+pd.read_excel(xlsx, 'Sheet1')
+```
+
+将数据写出到文本格式
+```
+data = pd.read_csv('examples/ex5.csv')
+data.to_csv('examples/out.csv',index=False, header=False)
+data.to_csv(sys.stdout, index=False, columns=['a', 'b', 'c'])
+
+```
