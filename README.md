@@ -22,7 +22,7 @@
    * [第五章 pandas入门](#第五章-pandas入门)
        - [pandas的数据结构](#pandas的数据结构)
        - [基本功能](#基本功能)
-       - [DataFrame和Series之间的运算](#dataframe和-eries之间的运算)
+       - [DataFrame和Series之间的运算](#dataframe和series之间的运算)
        - [排序和排名](#排序和排名)
        - [汇总和计算描述统计](#汇总和计算描述统计)
    * [第6章 数据加载、存储与文件格式](#第6章-数据加载存储与文件格式)
@@ -66,7 +66,7 @@
  import statsmodels as sm
  ```
 
-## python语法基础
+##第二章 python语法基础
 
  >从事数据分析和科学计算的人却会使用IPython，一个强化的Python解释器，或Jupyter notebooks，一个网页代码笔记本
 
@@ -651,7 +651,7 @@ f = open(path)
  ```
 
 
- ## pandas入门
+ ##第五章 pandas入门
  >虽然pandas采用了大量的NumPy编码风格，但二者最大的不同是pandas是专门为处理表格和混杂数据设计的。而NumPy更适合处理统一的数值数组数据。
  ```
  import pandas as pd
@@ -1146,5 +1146,16 @@ pd.merge(df1, df2)
 pd.merge(df1, df2, on = 'key')                
 
 #如果两个对象的列名不同，也可以分别进行指定
+df3 = pd.DataFrame({'lkey': ['b', 'b', 'a', 'c', 'a', 'a', 'b'],
+                    'data1': range(7)})
 
+df4 = pd.DataFrame({'rkey': ['a', 'b', 'd'],
+                     'data2': range(3)})
+pd.merge(df3, df4, left_on = 'lkey', right_on= 'rkey')
+
+pd.merge(df1, df2, how='outer')
 ```
+>inner 使用两个表都有的键
+left 使用左表中所有的键
+right 使用右表中所有的键
+outer 使用两个表中所有的键
