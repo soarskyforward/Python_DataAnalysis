@@ -1159,3 +1159,135 @@ pd.merge(df1, df2, how='outer')
 left 使用左表中所有的键
 right 使用右表中所有的键
 outer 使用两个表中所有的键
+
+索引上的合并
+```
+left1 = pd.DataFrame({'key': ['a', 'b', 'a', 'a', 'b', 'c'],
+                       'value': range(6)})
+right1 = pd.DataFrame({'group_val': [3.5, 7]}, index=['a', 'b'])
+pd.merge(left1, right1, left_on = 'key', right_index = True)
+
+```
+轴向连接
+```
+arr = np.arange(12).reshape((3,4))
+np.concatenate([arr, arr], axis = 1)
+
+s1 = pd.Series([0, 1], index=['a', 'b'])
+s2 = pd.Series([2, 3, 4], index=['c', 'd', 'e'])
+s3 = pd.Series([5, 6], index=['f', 'g'])
+pd.concat([s1,s2,s3])
+pd.concat([s1,s2,s3], axis = 1)
+#可以通过join_axes指定要在其它轴上使用的索引
+pd.concat([s1, s4], axis=1, join_axes=[['a', 'c', 'b', 'e']])
+#在连接轴上创建一个层次化索引。使用keys参数即可达到这个目的
+result = pd.concat([s1, s1, s3], keys=['one','two', 'three'])
+```
+
+合并重叠数据
+```
+np.where(pd.isnull(a), b, a)
+#用传递对象中的数据为调用对象的缺失数据“打补丁”
+b.combine_first(a)
+```
+
+#### 重塑和轴向旋转
+
+- stack：将数据的列“旋转”为行。
+- unstack：将数据的行“旋转”为列。
+
+将“长格式”旋转为“宽格式”
+```
+data = pd.read_csv('examples/macrodata.csv')
+data.head()
+periods = pd.PeriodIndex(year=data.year, quarter=data.quarter,name='date')
+columns = pd.Index(['realgdp', 'infl', 'unemp'], name='item')
+data = data.reindex(columns=columns)
+data.index = periods.to_timestamp('D', 'end')
+ldata = data.stack().reset_index().rename(columns={0: 'value'})
+#前两个传递的值分别用作行和列索引，最后一个可选值则是用于填充DataFrame的数据列。
+pivoted = ldata.pivot('date', 'item', 'value')
+```
+将“宽格式”旋转为“长格式”
+```
+df = pd.DataFrame({'key': ['foo', 'bar', 'baz'],
+                   'A': [1, 2, 3],
+                   'B': [4, 5, 6],
+                    'C': [7, 8, 9]})
+melted = pd.melt(df, ['key'])
+#使用pivot，可以重塑回原来的样子
+reshaped = melted.pivot('key', 'variable', 'value')
+```
+
+## 第9章 绘图和可视化
+
+#### matplotlib API入门
+>图像代码详见matplotlib_test.ipynb
+```
+import matplotlib.pyplot as plt
+import numpy as np
+
+data = np.arange(10)
+plt.plot(data)
+```
+
+Figure和Subplot
+
+>使用Jupyter notebook有一点不同，即每个小窗重新执行后，图形会被重置。因此，对于复杂的图形，，你必须将所有的绘图命令存在一个小窗里。
+
+```
+fig = plt.figure()
+#这条代码的意思是：图像应该是2×2的（即最多4张图），且当前选中的是4个subplot中的第一个（编号从1开始）。
+ax1 = fig.add_subplot(2,2,1)
+ax2 = fig.add_subplot(2, 2, 2)
+ax3 = fig.add_subplot(2, 2, 3)
+#如果这时执行一条绘图命令matplotlib就会在最后一个用过的subplot上进行绘制
+plt.plot(np.random.randn(50).cumsum(), 'k--')
+ax1.hist(np.random.randn(100), bins=20, color='k', alpha=0.3)
+ax2.scatter(np.arange(30), np.arange(30) + 3 * np.random.randn(30))
+```
+```
+#调整subplot周围的间距
+subplots_adjust(left=None, bottom=None, right=None, top=None,
+                wspace=None, hspace=None)
+```
+
+颜色、标记和线型
+```
+ax.plot(x, y, 'g--')
+ax.plot(x, y, linestyle='--', color='g')
+```
+刻度、标签和图例
+```
+fig = plt.figure()
+ax = fig.add_subplot(1,1,1)
+ax.plot(np.random.randn(1000).cumsum())
+ticks = ax.set_xticks([0, 250, 500, 750, 1000])
+labels = ax.set_xticklabels(['one', 'two', 'three', 'four', 'five'],
+                             rotation=30, fontsize='small')
+ax.set_title('My matplotlib plot')
+ax.set_xlabel('Stages')
+```
+```
+fig = plt.figure(); ax = fig.add_subplot(1, 1, 1)
+ ax.plot(randn(1000).cumsum(), 'k', label='one')
+ ax.plot(randn(1000).cumsum(), 'k--', label='two')
+ ax.plot(randn(1000).cumsum(), 'k.', label='three')
+ ax.leagend(loc = 'best')
+```
+将图表保存到文件
+```
+plt.savefig('figpath.svg')
+```
+
+#### 使用pandas和seaborn绘图
+```
+df = pd.DataFrame(np.random.randn(10, 4).cumsum(0),
+                  columns=['A', 'B', 'C', 'D'],
+                   index=np.arange(0, 100, 10))
+#DataFrame的plot方法会在一个subplot中为各列绘制一条线，并自动创建图例,df.plot()等价于df.plot.line()
+df.plot()
+```
+
+
+## 第10章 数据聚合与分组运算
