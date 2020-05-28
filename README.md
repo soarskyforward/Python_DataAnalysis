@@ -1006,6 +1006,7 @@ group_names = ['Youth', 'YoungAdult', 'MiddleAged', 'Senior']
 pd.cut(ages, bins, labels = group_names)
 ```
 >qcut是一个非常类似于cut的函数，它可以根据样本分位数对数据进行面元划分。根据数据的分布情况，cut可能无法使各个面元中含有相同数量的数据点。而qcut由于使用的是样本分位数，因此可以得到大小基本相等的面元
+
 ```
 data = np.random.randn(1000)
 cats = pd.qcut(data, 4)
@@ -1051,6 +1052,7 @@ data.loc[['b','d']]
 data.loc[:, 2]
 ```
 >层次化索引在数据重塑和基于分组的操作（如透视表生成）中扮演着重要的角色。例如，可以通过unstack方法将这段数据重新安排到一个DataFrame中
+
 ```
 data.unstack()
 #unstack的逆运算是stack
@@ -1059,6 +1061,7 @@ data.instack().stack()
 
 重拍与分级排序
 >有时，你需要重新调整某条轴上各级别的顺序，或根据指定级别上的值对数据进行排序。swaplevel接受两个级别编号或名称，并返回一个互换了级别的新对象（但数据不会发生变化）
+
 ```
 frame = pd.DataFrame(np.arange(12).reshape((4, 3)),
                     index=[['a', 'a', 'b', 'b'], [1, 2, 1, 2]],
@@ -1090,3 +1093,5 @@ frame.set_index(['c', 'd'], drop = False)
 #reset_index的功能跟set_index刚好相反，层次化索引的级别会被转移到列里面
 frame2.reset_index()
 ```
+
+#### 合并数据集
