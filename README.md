@@ -1384,6 +1384,172 @@ tips = pd.read_csv('examples/tips.csv')
 tips['tip_pct'] = tips['tip'] / tips['total_bill']
 grouped = tips.groupby(['day', 'smoker'])
 grouped_pct = grouped['tip_pct']
+
 #如果传入一组函数或函数名，得到的DataFrame的列就会以相应的函数命名
 grouped_pct.agg(['mean', 'std', peak_to_peak])
+#传入的是一个由(name,function)元组组成的列表，则各元组的第一个元素就会被用作DataFrame的列名
+grouped_pct.agg([('foo', 'mean'), ('bar', np.std)])
+
+#对一个列或不同的列应用不同的函数
+groupby.agg({'tip':np.max, 'size':'sum'})
+grouped.agg({'tip_pct' : ['min', 'max', 'mean', 'std'],'size' : 'sum'})
+```
+#### apply：“拆分－应用－合并”
+```
+def top(df, n = 5, column = 'tip_pct'):
+    return df.sort_values(by = column)[-n:]
+top(tips, n = 6)
+tips.groupby('smoker').apply(top)
+```
+>top函数在DataFrame的各个片段上调用，然后结果由pandas.concat组装到一起，并以分组名称进行了标记。于是，最终结果就有了一个层次化索引，其内层索引值来自原DataFrame。
+
+分位数和桶分析
+```
+frame = pd.DataFrame({'data1': np.random.randn(1000),
+                      'data2': np.random.randn(1000)})
+quartiles = pd.cut(frame.data1, 4)
+def get_stats(group):
+     return {'min': group.min(), 'max': group.max(),
+             'count': group.count(), 'mean': group.mean()}
+grouped = frame.data2.groupby(quartiles)
+grouped.apply(get_stats).unstack()
+```
+
+#### 透视表和交叉表
+```
+tips.pivot_table(index=['day', 'smoker'])
+tips.pivot_table(['tip_pct', 'size'], index=['time', 'day'],
+                  columns='smoker')
+#传入margins=True添加分项小计
+tips.pivot_table('tip_pct', index=['time', 'smoker'], columns='day',
+                 aggfunc=len, margins=True)
+tips.pivot_table('tip_pct', index=['time', 'size', 'smoker'],
+                 columns='day', aggfunc='mean', fill_value=0)   
+```
+
+
+## 第11章 时间序列
+
+#### 日期和时间数据类型及工具
+```
+from datetime import datetime
+
+now = datetime.now()
+now.year, now.month, now.day
+
+delta = datetime(2020,1,1) - datetime(2000,2,1)
+delta.day
+```
+```
+from datetime import timedelta
+
+start = datetime(2000,2,1)
+start + timedelta(21)
+```
+
+字符串和datetime的相互转换
+```
+stamp = datetime(2000,2,1)
+str(stamp)
+stamp.strftime('%Y-%m-%d')
+
+value = '2011-01-03'
+datetime.strptime(value, '%Y-%m-%d')
+datestrs = ['7/6/2011', '8/6/2011']
+[datetime.strptime(x, '%m/%d/%Y') for x in datestrs]
+```
+
+```
+from dateutil.parse import parse
+
+#dateutil可以解析几乎所有人类能够理解的日期表示形式
+parse('2011-01-03')
+parse('Jan 31, 1997 10:45 PM')
+#在国际通用的格式中，日出现在月的前面很普遍，传入dayfirst=True即可解决
+parse('6/12/2011', dayfirst=True)
+```
+
+#### 时间序列基础
+>pandas最基本的时间序列类型就是以时间戳（通常以Python字符串或datatime对象表示）为索引的Series
+
+```
+from datetime import datetime
+
+dates = [datetime(2011, 1, 2), datetime(2011, 1, 5),
+          datetime(2011, 1, 7), datetime(2011, 1, 8),
+          datetime(2011, 1, 10), datetime(2011, 1, 12)]
+ts = pd.Series(np.random.randn(6), index = dates)
+ts.index
+```
+
+索引、选取、子集构造
+```
+stamp = ts.index[2]
+ts[stamp]
+
+#更为方便的用法：传入一个可以被解释为日期的字符串
+ts['1/10/2011']
+ts['20110110']
+
+#对于较长的时间序列，只需传入“年”或“年月”即可轻松选取数据的切片
+longer_ts = pd.Series(np.random.randn(1000),index = pd.date_range('1/1/2000',periods = 1000))
+longer_ts['2001']
+longer_ts['2001-05']
+```
+
+带有重复索引的时间序列
+```
+dates = pd.DatetimeIndex(['1/1/2000', '1/2/2000', '1/2/2000',
+                           '1/2/2000', '1/3/2000'])
+dup_ts = pd.Series(np.arange(5), index=dates)
+dup_ts.is_unique()
+
+grouped = dup_ts.groupby(level=0)
+grouped.count()
+```
+
+#### 日期的范围、频率以及移动
+生成日期范围
+```
+index = pd.date_range('2012-04-01', '2012-06-01')
+pd.date_range(start='2012-04-01', periods=20)
+pd.date_range(end='2012-06-01', periods=20)
+
+#date_range默认会保留起始和结束时间戳的时间信息
+pd.date_range('2012-05-02 12:56:31', periods=5)
+#产生一组被规范化（normalize）时间戳。normalize选项即可实现该功能
+pd.date_range('2012-05-02 12:56:31', periods=5, normalize=True)
+```
+
+频率和日期偏移量
+```
+from pandas.tseries.offsets import Hour, Minute
+
+hour = Hour()
+four_hours = Hour(4)
+#一般来说，无需明确创建这样的对象，只需使用诸如"H"或"4H"这样的字符串别名即可
+pd.date_range('2000-01-01', '2000-01-03 23:59', freq='4h')
+pd.date_range('2000-01-01', periods=10, freq='1h30min')
+```
+
+移动（超前和滞后）数据
+>移动（shifting）指的是沿着时间轴将数据前移或后移。Series和DataFrame都有一个shift方法用于执行单纯的前移或后移操作，保持索引不变
+```
+ts = pd.Series(np.random.randn(4),
+                index=pd.date_range('1/1/2000', periods=4, freq='M'))
+#进行移动时，会在时间序列的前面或后面产生缺失数据
+ts.shift(2)
+ts.shift(-2)
+#如果频率已知，则可以将其传给shift以便实现对时间戳进行位移而不是对数据进行简单位移
+ts.shift(2, freq='M')
+ts.shift(3, freq='D')
+```
+
+#### 时期及其算术运算
+```
+#这个Period对象表示的是从2007年1月1日到2007年12月31日之间的整段时间
+p = pd.Period(2007, freq = 'A-DEC')
+
+rng = pd.period_range('2000-01-01', '2000-06-30', freq='M')
+pd.Series(np.random.randn(6), index=rng)
 ```
