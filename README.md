@@ -1291,3 +1291,99 @@ df.plot()
 
 
 ## 第10章 数据聚合与分组运算
+>对数据集进行分组并对各组应用一个函数（无论是聚合还是转换），通常是数据分析工作中的重要环节。在将数据集加载、融合、准备好之后，通常就是计算分组统计或生成透视表。pandas提供了一个灵活高效的gruopby功能，它使你能以一种自然的方式对数据集进行切片、切块、摘要等操作。
+
+#### GroupBy机制
+```
+df = pd.DataFrame({'key1' : ['a', 'a', 'b', 'b', 'a'],
+                  'key2' : ['one', 'two', 'one', 'two', 'one'],
+                   'data1' : np.random.randn(5),
+                   'data2' : np.random.randn(5)})
+#按key1进行分组，并计算data1列的平均值
+grouped = df['data1'].groupby(df['key1'])
+grouped.mean()
+
+means = df['data1'].groupby([df['key1'], df['key2']]).mean()
+means.unstack()
+
+df.groupby(['key1', 'key2']).size()
+```
+
+对分组进行迭代
+```
+for name, group in df.groupby('key1'):
+    print(name)
+    print(group)
+
+for (k1, k2), group in df.groupby(['key1', 'key2']):
+    print((k1, k2))
+    print(group)
+
+#将这些数据片段做成一个字典
+pieces = dict(list(df.groupby('key1')))
+pieces['b']
+```
+
+选取一列或列的子集
+```
+#语法糖
+df.groupby('key1')['data1']
+df.groupby('key1')[['data2']]
+df['data1'].groupby(df['key1'])
+df[['data2']].groupby(df['key1'])
+
+df.groupby(['key1', 'key2'])[['data2']].mean()
+```
+
+通过字典或Series进行分组
+```
+people = pd.DataFrame(np.random.randn(5, 5),
+                       columns=['a', 'b', 'c', 'd', 'e'],
+                       index=['Joe', 'Steve', 'Wes', 'Jim', 'Travis'])
+people.iloc[2:3, [1, 2]] = np.nan # Add a few NA values
+mapping = {'a': 'red', 'b': 'red', 'c': 'blue',
+            'd': 'blue', 'e': 'red', 'f' : 'orange'}
+by_column = people.groupby(mapping, axis = 1)
+by_column.sum()
+```
+
+通过函数进行分组
+```
+people.groupby(len).sum()
+
+#将函数跟数组、列表、字典、Series混合使用也不是问题
+key_list = ['one', 'one', 'one', 'two', 'two']
+people.groupby([len, key_list]).min()
+```
+
+根据索引级别分组
+```
+columns = pd.MultiIndex.from_arrays([['US', 'US', 'US', 'JP', 'JP'],
+                                    [1, 3, 5, 1, 3]],
+                                     names=['cty', 'tenor'])
+hier_df = pd.DataFrame(np.random.randn(4,5), columns = columns)
+hier_df.groupby(level = 'cty, axis = 1).count()
+```
+
+#### 数据聚合
+>聚合指的是任何能够从数组产生标量值的数据转换过程。之前的例子已经用过一些，比如mean、count、min以及sum等。
+
+```
+grouped = df.groupby('key1')
+grouped['data1'].quantile(0.9)
+
+#如果要使用你自己的聚合函数，只需将其传入aggregate或agg方法即可
+def peak_to_peak(arr):
+    return arr.max() - arr.min()
+grouped.agg(peak_to_peak)
+```
+
+面向列的多函数应用
+```
+tips = pd.read_csv('examples/tips.csv')
+tips['tip_pct'] = tips['tip'] / tips['total_bill']
+grouped = tips.groupby(['day', 'smoker'])
+grouped_pct = grouped['tip_pct']
+#如果传入一组函数或函数名，得到的DataFrame的列就会以相应的函数命名
+grouped_pct.agg(['mean', 'std', peak_to_peak])
+```
