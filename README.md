@@ -36,7 +36,7 @@
        - [合并数据集](#合并数据集)
        - [重塑和轴向旋转](#重塑和轴向旋转)
   * [第9章 绘图和可视化](#第9章-绘图和可视化)
-      - [matplotlib API入门](#matplotlib-api--)
+      - [matplotlib API入门](#matplotlib-api入门)
       - [使用pandas和seaborn绘图](#使用pandas和seaborn绘图)
   * [第10章 数据聚合与分组运算](#第10章-数据聚合与分组运算)
       - [GroupBy机制](#groupby机制)
