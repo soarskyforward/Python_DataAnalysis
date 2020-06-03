@@ -664,7 +664,7 @@ f = open(path)
  ```
 
 
- ##第五章 pandas入门
+ ## 第五章 pandas入门
  >虽然pandas采用了大量的NumPy编码风格，但二者最大的不同是pandas是专门为处理表格和混杂数据设计的。而NumPy更适合处理统一的数值数组数据。
  ```
  import pandas as pd
@@ -1236,6 +1236,7 @@ reshaped = melted.pivot('key', 'variable', 'value')
 
 #### matplotlib API入门
 >图像代码详见matplotlib_test.ipynb
+
 ```
 import matplotlib.pyplot as plt
 import numpy as np
@@ -1547,6 +1548,7 @@ pd.date_range('2000-01-01', periods=10, freq='1h30min')
 
 移动（超前和滞后）数据
 >移动（shifting）指的是沿着时间轴将数据前移或后移。Series和DataFrame都有一个shift方法用于执行单纯的前移或后移操作，保持索引不变
+
 ```
 ts = pd.Series(np.random.randn(4),
                 index=pd.date_range('1/1/2000', periods=4, freq='M'))
