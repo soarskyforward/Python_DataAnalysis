@@ -79,7 +79,7 @@
  import statsmodels as sm
  ```
 
-##第二章 python语法基础
+## 第二章 python语法基础
 
  >从事数据分析和科学计算的人却会使用IPython，一个强化的Python解释器，或Jupyter notebooks，一个网页代码笔记本
 
